@@ -1,0 +1,32 @@
+{
+  "name": "flashurl",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/analytics-service",
+    "apps/redirect-service",
+    "apps/url-service",
+    "apps/user-service",
+    "packages/*"
+  ],
+  "scripts": {
+    "postinstall": "patch-package",
+    "dev:url": "npm run dev --workspace=@flashurl/url-service",
+    "dev:redirect": "npm run dev --workspace=@flashurl/redirect-service",
+    "dev:user": "npm run dev --workspace=@flashurl/user-service",
+    "dev:analytics": "npm run dev --workspace=@flashurl/analytics-service",
+    "build:url": "npm run build --workspace=@flashurl/url-service",
+    "build:redirect": "npm run build --workspace=@flashurl/redirect-service",
+    "build:user": "npm run build --workspace=@flashurl/user-service",
+    "build:analytics": "npm run build --workspace=@flashurl/analytics-service",
+    "typecheck:url": "npm run typecheck --workspace=@flashurl/url-service",
+    "typecheck:redirect": "npm run typecheck --workspace=@flashurl/redirect-service",
+    "typecheck:user": "npm run typecheck --workspace=@flashurl/user-service",
+    "typecheck:analytics": "npm run typecheck --workspace=@flashurl/analytics-service",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.1"
+  }
+}
