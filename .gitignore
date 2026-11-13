@@ -17,3 +17,5 @@ load-tests/results/*
 !load-tests/results/.gitkeep
 
 mysql-recovery/
+
+*.sql
