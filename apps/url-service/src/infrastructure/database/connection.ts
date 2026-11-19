@@ -11,9 +11,6 @@ export const sequelize = new Sequelize(
     port: env.DB_PORT,
     dialect: "mysql",
     timezone: "+00:00",
-    // logging: env.NODE_ENV === "development"
-    //   ? (sql) => console.log(`[SQL] ${sql}`)
-    //   : false,
     logging: false,
     pool: {
       min: env.DB_POOL_MIN,

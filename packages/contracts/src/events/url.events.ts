@@ -1,4 +1,3 @@
-
 export interface EventEnvelope<TPayload> {
   eventId: string;
   eventType: string;
@@ -8,10 +7,18 @@ export interface EventEnvelope<TPayload> {
   payload: TPayload;
 }
 
+export interface UrlLifecycleEventEnvelope<
+  TPayload,
+> extends EventEnvelope<TPayload> {
+  aggregateVersion: number;
+}
+
 export interface UrlCreatedPayload {
   id: string;
   shortCode: string;
   originalUrl: string;
+  userId: string | null;
+  createdAt: string;
   expiresAt: string | null;
 }
 
@@ -19,6 +26,8 @@ export interface UrlUpdatedPayload {
   id: string;
   shortCode: string;
   originalUrl: string;
+  userId: string | null;
+  createdAt: string;
   expiresAt: string | null;
 }
 
@@ -27,12 +36,28 @@ export interface UrlDeletedPayload {
   shortCode: string;
 }
 
-export type UrlCreatedEvent = EventEnvelope<UrlCreatedPayload>;
-export type UrlUpdatedEvent = EventEnvelope<UrlUpdatedPayload>;
-export type UrlDeletedEvent = EventEnvelope<UrlDeletedPayload>;
+export interface UrlClickedPayload {
+  shortCode: string;
+  referrer: string | null;
+  userAgent: string | null;
+  ipAddress: string | null;
+}
+
+export type UrlCreatedEvent =
+  UrlLifecycleEventEnvelope<UrlCreatedPayload>;
+
+export type UrlUpdatedEvent =
+  UrlLifecycleEventEnvelope<UrlUpdatedPayload>;
+
+export type UrlDeletedEvent =
+  UrlLifecycleEventEnvelope<UrlDeletedPayload>;
+
+export type UrlClickedEvent =
+  EventEnvelope<UrlClickedPayload>;
 
 export const UrlEventType = {
   CREATED: "url.created",
   UPDATED: "url.updated",
-  DELETED: "url.deleted"
+  DELETED: "url.deleted",
+  CLICKED: "url.clicked",
 } as const;

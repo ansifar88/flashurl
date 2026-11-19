@@ -1,4 +1,3 @@
-
 import { Kafka, logLevel, type Consumer } from "kafkajs";
 import { UrlEventType } from "@flashurl/contracts";
 import { env } from "../../../config/env";
@@ -9,17 +8,13 @@ import {
   RetryableUrlEventError,
 } from "./event.handler";
 
-import {
-  publishToDlq,
-  type DlqMessage,
-} from "../producers/dlq.producer";
+import { publishToDlq, type DlqMessage } from "../producers/dlq.producer";
 
 const INITIAL_RETRY_DELAY_MS = 500;
 const MAX_RETRY_DELAY_MS = 30_000;
 const HEARTBEAT_INTERVAL_MS = 2_000;
 
-const brokers = env.KAFKA_BROKERS
-  .split(",")
+const brokers = env.KAFKA_BROKERS.split(",")
   .map((broker) => broker.trim())
   .filter(Boolean);
 
@@ -31,14 +26,18 @@ const kafka = new Kafka({
   clientId: env.KAFKA_CLIENT_ID,
   brokers,
   logLevel: logLevel.ERROR,
+  requestTimeout: 5_000,
+  enforceRequestTimeout: true,
 });
 
 const consumer: Consumer = kafka.consumer({
   groupId: env.KAFKA_CONSUMER_GROUP_ID,
 });
+const admin = kafka.admin();
 
 let connected = false;
 let running = false;
+let adminConnected = false;
 
 function getRetryDelay(attempt: number): number {
   return Math.min(
@@ -138,43 +137,38 @@ export async function connectKafkaConsumer(): Promise<void> {
 
   try {
     await consumer.subscribe({
-      topics: Object.values(UrlEventType),
+      topics: [
+        UrlEventType.CREATED,
+        UrlEventType.UPDATED,
+        UrlEventType.DELETED,
+      ],
       fromBeginning: false,
     });
 
     connected = true;
 
-    console.log(
-      "[Kafka] Redirect consumer connected and subscribed.",
-    );
+    console.log("[Kafka] Redirect consumer connected and subscribed.");
   } catch (error) {
     await consumer.disconnect();
     throw error;
   }
 }
+let starting = false;
 
 export async function startKafkaConsumer(): Promise<void> {
   if (!connected) {
-    throw new Error(
-      "Kafka consumer must be connected before starting.",
-    );
+    throw new Error("Kafka consumer must be connected before starting.");
   }
 
-  if (running) return;
+  if (running || starting) return;
 
-  running = true;
+  starting = true;
 
   try {
     await consumer.run({
       autoCommit: false,
 
-      eachMessage: async ({
-        topic,
-        partition,
-        message,
-        heartbeat,
-        pause,
-      }) => {
+      eachMessage: async ({ topic, partition, message, heartbeat, pause }) => {
         const originalValue = message.value?.toString() ?? "";
 
         let resumePartition: (() => void) | undefined;
@@ -233,15 +227,16 @@ export async function startKafkaConsumer(): Promise<void> {
           if (resumePartition) {
             resumePartition();
 
-            console.log(
-              `[Kafka] Resumed ${topic}[${partition}].`,
-            );
+            console.log(`[Kafka] Resumed ${topic}[${partition}].`);
           }
         }
       },
     });
+    running = true;
+
+    console.log("[Kafka] Redirect consumer is running.");
   } finally {
-    running = false;
+    starting = false;
   }
 }
 
@@ -257,4 +252,33 @@ export async function disconnectKafkaConsumer(): Promise<void> {
   connected = false;
 
   console.log("[Kafka] Redirect consumer disconnected.");
+}
+
+export async function connectKafkaAdmin(): Promise<void> {
+  if (adminConnected) return;
+
+  await admin.connect();
+  adminConnected = true;
+}
+
+export async function checkKafkaHealth(): Promise<boolean> {
+  if (!adminConnected) return false;
+
+  try {
+    await admin.describeCluster();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function disconnectKafkaAdmin(): Promise<void> {
+  if (!adminConnected) return;
+
+  await admin.disconnect();
+  adminConnected = false;
+}
+
+export function isKafkaConsumerReady(): boolean {
+  return connected && running;
 }

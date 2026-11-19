@@ -74,6 +74,10 @@ export async function publishToDlq(message: DlqMessage): Promise<void> {
   );
 }
 
+export function isDlqProducerConnected(): boolean {
+  return connected;
+}
+
 export async function disconnectDlqProducer(): Promise<void> {
   if (!connected) return;
 

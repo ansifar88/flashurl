@@ -1,4 +1,3 @@
-
 import { Kafka, logLevel, type Producer } from "kafkajs";
 
 import { env } from "../../../config/env";
@@ -7,6 +6,7 @@ export interface KafkaEvent {
   eventId: string;
   eventType: string;
   eventVersion: number;
+  aggregateVersion: number;
   occurredAt: string;
   aggregateId: string;
   payload: Record<string, unknown>;
@@ -39,7 +39,8 @@ export async function connectKafkaProducer(): Promise<void> {
   if (connected) return;
 
   if (!connectionPromise) {
-    connectionPromise = producer.connect()
+    connectionPromise = producer
+      .connect()
       .then(() => {
         connected = true;
         console.log("Kafka producer connected.");
@@ -55,9 +56,7 @@ export async function connectKafkaProducer(): Promise<void> {
   await connectionPromise;
 }
 
-export async function publishKafkaEvent(
-  event: KafkaEvent,
-): Promise<void> {
+export async function publishKafkaEvent(event: KafkaEvent): Promise<void> {
   if (!connected) {
     throw new Error("Kafka producer is not connected.");
   }
@@ -73,6 +72,7 @@ export async function publishKafkaEvent(
         headers: {
           "event-id": event.eventId,
           "event-version": String(event.eventVersion),
+          "aggregate-version": String(event.aggregateVersion),
         },
       },
     ],
@@ -86,4 +86,20 @@ export async function disconnectKafkaProducer(): Promise<void> {
   connected = false;
 
   console.log("Kafka producer disconnected.");
+}
+
+export async function checkKafkaHealth(): Promise<boolean> {
+  const admin = kafka.admin();
+
+  try {
+    await admin.connect();
+
+    await admin.describeCluster();
+
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await admin.disconnect().catch(() => undefined);
+  }
 }

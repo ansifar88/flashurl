@@ -6,6 +6,7 @@ import { OutboxEvent } from "../models/outbox-event.model";
 
 interface CreateOutboxEventInput {
   aggregateId: string;
+  aggregateVersion: number;
   eventType: string;
   eventVersion?: number;
   payload: Record<string, unknown>;
@@ -19,6 +20,7 @@ export async function createOutboxEvent(
     {
       eventId: randomUUID(),
       aggregateId: data.aggregateId,
+      aggregateVersion: data.aggregateVersion,
       eventType: data.eventType,
       eventVersion: data.eventVersion ?? 1,
       payload: data.payload,

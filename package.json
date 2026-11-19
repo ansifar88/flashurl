@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
+    "apps/api-gateway",
     "apps/analytics-service",
     "apps/redirect-service",
     "apps/url-service",
@@ -24,7 +25,10 @@
     "typecheck:user": "npm run typecheck --workspace=@flashurl/user-service",
     "typecheck:analytics": "npm run typecheck --workspace=@flashurl/analytics-service",
     "build": "npm run build --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:gateway": "npm run dev --workspace=@flashurl/api-gateway",
+    "build:gateway": "npm run build --workspace=@flashurl/api-gateway",
+    "typecheck:gateway": "npm run typecheck --workspace=@flashurl/api-gateway"
   },
   "devDependencies": {
     "patch-package": "^8.0.1"

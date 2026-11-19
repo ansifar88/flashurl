@@ -31,6 +31,7 @@ export class OutboxEvent extends Model<
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
   declare occurredAt: CreationOptional<Date>;
+  declare aggregateVersion: number;
 }
 
 OutboxEvent.init(
@@ -61,6 +62,12 @@ OutboxEvent.init(
       allowNull: false,
       defaultValue: 1,
       field: "event_version",
+    },
+    aggregateVersion: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+      defaultValue: 1,
+      field: "aggregate_version",
     },
     payload: {
       type: DataTypes.JSON,

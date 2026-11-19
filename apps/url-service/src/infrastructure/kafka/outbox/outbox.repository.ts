@@ -7,6 +7,7 @@ export interface ClaimedOutboxEvent {
   aggregateId: string;
   eventType: string;
   eventVersion: number;
+  aggregateVersion: number;
   payload: Record<string, unknown>;
   attempts: number;
   occurredAt: Date;
@@ -32,6 +33,7 @@ export async function claimPendingOutboxEvents(
           aggregate_id AS aggregateId,
           event_type AS eventType,
           event_version AS eventVersion,
+          aggregate_version AS aggregateVersion,
           payload,
           attempts,
           occurred_at AS occurredAt

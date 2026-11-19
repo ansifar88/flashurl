@@ -7,6 +7,8 @@ import {
   down as dropUrls,
 } from "../migrations/001-create-urls";
 import * as outboxMigration from "../migrations/002-create-outbox-events";
+import * as aggregateVersionMigration from "../migrations/003-add-aggregate-version-to-urls";
+import * as outboxAggregateVersionMigration from "../migrations/004-add-aggregate-version-to-outbox-events";
 
 async function migrate(): Promise<void> {
   const queryInterface = sequelize.getQueryInterface();
@@ -22,6 +24,17 @@ async function migrate(): Promise<void> {
         name: "002-create-outbox-events",
         up: outboxMigration.up,
         down: outboxMigration.down,
+      },
+      {
+        name: "003-add-aggregate-version-to-urls",
+        up: async ({ context }) => aggregateVersionMigration.up(context),
+        down: async ({ context }) => aggregateVersionMigration.down(context),
+      },
+      {
+        name: "004-add-aggregate-version-to-outbox-events",
+        up: async ({ context }) => outboxAggregateVersionMigration.up(context),
+        down: async ({ context }) =>
+          outboxAggregateVersionMigration.down(context),
       },
     ],
 

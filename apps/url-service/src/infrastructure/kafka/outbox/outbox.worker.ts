@@ -30,6 +30,7 @@ async function processEvent(
       eventId: event.eventId,
       eventType: event.eventType,
       eventVersion: event.eventVersion,
+      aggregateVersion: event.aggregateVersion,
       occurredAt: new Date(event.occurredAt).toISOString(),
       aggregateId: event.aggregateId,
       payload: event.payload,

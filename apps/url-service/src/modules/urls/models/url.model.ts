@@ -1,11 +1,10 @@
-
 import {
   DataTypes,
   Model,
   type InferAttributes,
   type InferCreationAttributes,
   type CreationOptional,
-  type Sequelize
+  type Sequelize,
 } from "sequelize";
 
 export class Url extends Model<
@@ -21,6 +20,7 @@ export class Url extends Model<
   declare isActive: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
+  declare aggregateVersion: CreationOptional<number>;
 
   static initialize(sequelize: Sequelize): void {
     Url.init(
@@ -28,59 +28,65 @@ export class Url extends Model<
         id: {
           type: DataTypes.CHAR(36),
           primaryKey: true,
-          defaultValue: DataTypes.UUIDV4
+          defaultValue: DataTypes.UUIDV4,
         },
 
         shortCode: {
           type: DataTypes.STRING(16),
           allowNull: false,
           unique: true,
-          field: "short_code"
+          field: "short_code",
         },
 
         originalUrl: {
           type: DataTypes.TEXT,
           allowNull: false,
-          field: "original_url"
+          field: "original_url",
         },
 
         userId: {
           type: DataTypes.CHAR(36),
           allowNull: true,
-          field: "user_id"
+          field: "user_id",
         },
 
         customAlias: {
           type: DataTypes.BOOLEAN,
           allowNull: false,
           defaultValue: false,
-          field: "custom_alias"
+          field: "custom_alias",
         },
 
         expiresAt: {
           type: DataTypes.DATE,
           allowNull: true,
-          field: "expires_at"
+          field: "expires_at",
         },
 
         isActive: {
           type: DataTypes.BOOLEAN,
           allowNull: false,
           defaultValue: true,
-          field: "is_active"
+          field: "is_active",
         },
 
         createdAt: {
           type: DataTypes.DATE,
           allowNull: false,
-          field: "created_at"
+          field: "created_at",
         },
 
         updatedAt: {
           type: DataTypes.DATE,
           allowNull: false,
-          field: "updated_at"
-        }
+          field: "updated_at",
+        },
+        aggregateVersion: {
+          type: DataTypes.INTEGER.UNSIGNED,
+          allowNull: false,
+          defaultValue: 1,
+          field: "aggregate_version",
+        },
       },
       {
         sequelize,
@@ -89,13 +95,13 @@ export class Url extends Model<
         underscored: true,
         indexes: [
           {
-            fields: ["user_id"]
+            fields: ["user_id"],
           },
           {
-            fields: ["expires_at"]
-          }
-        ]
-      }
+            fields: ["expires_at"],
+          },
+        ],
+      },
     );
   }
 }

@@ -1,4 +1,3 @@
-
 import { UniqueConstraintError } from "sequelize";
 
 import { env } from "../../../config/env";
@@ -9,6 +8,7 @@ import {
   findUrlByShortCode,
   updateUrlRecord,
   deactivateUrlRecord,
+  findUrlByShortCodeAndUserId,
 } from "../repositories/url.repository";
 
 import { createOutboxEvent } from "../repositories/outbox.repository";
@@ -22,19 +22,23 @@ import { UrlEventType } from "@flashurl/contracts";
 
 const MAX_RETRIES = 5;
 
-export async function createUrl(input: CreateUrlInput) {
+export async function createUrl(input: CreateUrlInput, userId?: string) {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const shortCode = generateShortCode();
 
     try {
+      const expiresAt = userId
+        ? input.expiresAt
+          ? new Date(input.expiresAt)
+          : null
+        : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       const result = await sequelize.transaction(async (transaction) => {
         const url = await createUrlRecord(
           {
             shortCode,
             originalUrl: input.originalUrl,
-            expiresAt: input.expiresAt
-              ? new Date(input.expiresAt)
-              : null,
+            expiresAt: expiresAt,
+            userId: userId ?? null,
           },
           transaction,
         );
@@ -42,11 +46,14 @@ export async function createUrl(input: CreateUrlInput) {
         await createOutboxEvent(
           {
             aggregateId: url.id,
+            aggregateVersion: url.aggregateVersion,
             eventType: UrlEventType.CREATED,
             payload: {
               id: url.id,
               shortCode: url.shortCode,
               originalUrl: url.originalUrl,
+              userId: url.userId,
+              createdAt: url.createdAt.toISOString(),
               expiresAt: url.expiresAt?.toISOString() ?? null,
             },
           },
@@ -99,9 +106,17 @@ export async function getUrlByShortCode(shortCode: string) {
   };
 }
 
-export async function updateUrl(shortCode: string, input: UpdateUrlInput) {
+export async function updateUrl(
+  shortCode: string,
+  input: UpdateUrlInput,
+  userId: string,
+) {
   return sequelize.transaction(async (transaction) => {
-    const existingUrl = await findUrlByShortCode(shortCode, transaction);
+    const existingUrl = await findUrlByShortCodeAndUserId(
+      shortCode,
+      userId,
+      transaction,
+    );
 
     if (!existingUrl) {
       throw new AppError(ErrorCode.URL_NOT_FOUND);
@@ -111,7 +126,10 @@ export async function updateUrl(shortCode: string, input: UpdateUrlInput) {
       throw new AppError(ErrorCode.URL_INACTIVE);
     }
 
-    if (existingUrl.expiresAt && existingUrl.expiresAt.getTime() <= Date.now()) {
+    if (
+      existingUrl.expiresAt &&
+      existingUrl.expiresAt.getTime() <= Date.now()
+    ) {
       throw new AppError(ErrorCode.URL_EXPIRED);
     }
 
@@ -125,14 +143,16 @@ export async function updateUrl(shortCode: string, input: UpdateUrlInput) {
     }
 
     if (input.expiresAt !== undefined) {
-      updateData.expiresAt = input.expiresAt
-        ? new Date(input.expiresAt)
-        : null;
+      updateData.expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
     }
 
-    await updateUrlRecord(shortCode, updateData, transaction);
+    await updateUrlRecord(shortCode, userId, updateData, transaction);
 
-    const updatedUrl = await findUrlByShortCode(shortCode, transaction);
+    const updatedUrl = await findUrlByShortCodeAndUserId(
+      shortCode,
+      userId,
+      transaction,
+    );
 
     if (!updatedUrl) {
       throw new AppError(ErrorCode.URL_NOT_FOUND);
@@ -141,11 +161,14 @@ export async function updateUrl(shortCode: string, input: UpdateUrlInput) {
     await createOutboxEvent(
       {
         aggregateId: updatedUrl.id,
+        aggregateVersion: updatedUrl.aggregateVersion,
         eventType: UrlEventType.UPDATED,
         payload: {
           id: updatedUrl.id,
           shortCode: updatedUrl.shortCode,
           originalUrl: updatedUrl.originalUrl,
+          userId: updatedUrl.userId,
+          createdAt: updatedUrl.createdAt.toISOString(),
           expiresAt: updatedUrl.expiresAt?.toISOString() ?? null,
         },
       },
@@ -162,10 +185,13 @@ export async function updateUrl(shortCode: string, input: UpdateUrlInput) {
   });
 }
 
-export async function deleteUrl(shortCode: string) {
+export async function deleteUrl(shortCode: string, userId: string) {
   return sequelize.transaction(async (transaction) => {
-    const existingUrl = await findUrlByShortCode(shortCode, transaction);
-
+    const existingUrl = await findUrlByShortCodeAndUserId(
+      shortCode,
+      userId,
+      transaction,
+    );
     if (!existingUrl) {
       throw new AppError(ErrorCode.URL_NOT_FOUND);
     }
@@ -174,23 +200,34 @@ export async function deleteUrl(shortCode: string) {
       throw new AppError(ErrorCode.URL_INACTIVE);
     }
 
-    await deactivateUrlRecord(shortCode, transaction);
+    await deactivateUrlRecord(shortCode, userId, transaction);
+
+    const deletedUrl = await findUrlByShortCodeAndUserId(
+      shortCode,
+      userId,
+      transaction,
+    );
+
+    if (!deletedUrl) {
+      throw new AppError(ErrorCode.URL_NOT_FOUND);
+    }
 
     await createOutboxEvent(
       {
-        aggregateId: existingUrl.id,
+        aggregateId: deletedUrl.id,
+        aggregateVersion: deletedUrl.aggregateVersion,
         eventType: UrlEventType.DELETED,
         payload: {
-          id: existingUrl.id,
-          shortCode: existingUrl.shortCode,
+          id: deletedUrl.id,
+          shortCode: deletedUrl.shortCode,
         },
       },
       transaction,
     );
 
     return {
-      id: existingUrl.id,
-      shortCode: existingUrl.shortCode,
+      id: deletedUrl.id,
+      shortCode: deletedUrl.shortCode,
       isActive: false,
     };
   });

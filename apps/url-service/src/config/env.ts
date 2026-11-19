@@ -9,6 +9,7 @@ const envSchema = z.object({
   SERVICE_NAME: z.string().default("url-service"),
   HOST: z.string().default("0.0.0.0"),
   PORT: z.coerce.number().int().min(1).max(65535).default(4001),
+  USER_SERVICE_INTERNAL_URL: z.string().url().default("http://localhost:4003"),
 
   DB_HOST: z.string().default("127.0.0.1"),
   DB_PORT: z.coerce.number().int().min(1).max(65535).default(3307),
@@ -23,6 +24,11 @@ const envSchema = z.object({
 
   KAFKA_BROKERS: z.string().default("localhost:29092"),
   KAFKA_CLIENT_ID: z.string().default("flashurl-url-service"),
+
+  JWT_ACCESS_SECRET: z.string().min(32),
+  JWT_ISSUER: z.string().default("flashurl-user-service"),
+  JWT_AUDIENCE: z.string().default("flashurl-api"),
+  ACCESS_TOKEN_COOKIE_NAME: z.string().default("flashurl_access"),
 });
 
 const result = envSchema.safeParse(process.env);

@@ -4,6 +4,11 @@ export const ErrorCode = {
   VALIDATION_ERROR: "VALIDATION_ERROR",
   RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED",
   API_ROUTE_NOT_FOUND: "API_ROUTE_NOT_FOUND",
+  RATE_LIMITER_UNAVAILABLE: "RATE_LIMITER_UNAVAILABLE",
+  UPSTREAM_SERVICE_UNAVAILABLE: "UPSTREAM_SERVICE_UNAVAILABLE",
+  UPSTREAM_SERVICE_TIMEOUT: "UPSTREAM_SERVICE_TIMEOUT",
+  ANALYTICS_NOT_IMPLEMENTED: "ANALYTICS_NOT_IMPLEMENTED",
+  PAYLOAD_TOO_LARGE: "PAYLOAD_TOO_LARGE",
 
   // URL Service
   URL_NOT_FOUND: "URL_NOT_FOUND",
@@ -21,6 +26,7 @@ export const ErrorCode = {
   INVALID_CREDENTIALS: "INVALID_CREDENTIALS",
   UNAUTHORIZED: "UNAUTHORIZED",
   FORBIDDEN: "FORBIDDEN",
+  EMAIL_ALREADY_EXISTS: "EMAIL_ALREADY_EXISTS",
 
   SHORT_CODE_GENERATION_FAILED: "SHORT_CODE_GENERATION_FAILED",
 } as const;
@@ -94,5 +100,31 @@ export const ERROR_DEFINITIONS: Record<
   URL_SERVICE_INVALID_RESPONSE: {
     message: "Invalid response from URL Service",
     statusCode: 502,
+  },
+  EMAIL_ALREADY_EXISTS: {
+    message: "An account with this email already exists",
+    statusCode: 409,
+  },
+  RATE_LIMITER_UNAVAILABLE: {
+    message: "Request protection is temporarily unavailable",
+    statusCode: 503,
+  },
+  UPSTREAM_SERVICE_UNAVAILABLE: {
+    message: "An upstream service is temporarily unavailable",
+    statusCode: 502,
+  },
+
+  UPSTREAM_SERVICE_TIMEOUT: {
+    message: "An upstream service request timed out",
+    statusCode: 504,
+  },
+
+  ANALYTICS_NOT_IMPLEMENTED: {
+    message: "Analytics API is not available yet",
+    statusCode: 501,
+  },
+  PAYLOAD_TOO_LARGE: {
+    message: "Request body exceeds the allowed size",
+    statusCode: 413,
   },
 };
